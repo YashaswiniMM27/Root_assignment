@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { OnboardingContent } from '../../components/layout/OnboardingContent'
 import { OnboardingFormPanel } from '../../components/layout/OnboardingFormPanel'
@@ -13,7 +13,10 @@ import { OtpVerificationStep } from './components/OtpVerificationStep'
 import { PasswordStep } from './components/PasswordStep'
 import { SuccessModal } from './components/SuccessModal'
 
+const PROGRESS_COMPLETION_DELAY_MS = 550
+
 export function OnboardingFlow() {
+  const [isCompleting, setIsCompleting] = useState(false)
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const {
     answers,
@@ -33,9 +36,21 @@ export function OnboardingFlow() {
   } = useOnboardingFlow()
   const currentStepIndex = ONBOARDING_STEPS.indexOf(currentStep)
   const showProgress = currentStep !== 'accountType'
+  const totalSteps = ONBOARDING_STEPS.length - 1
+
+  useEffect(() => {
+    if (!isCompleting) return
+
+    const timerId = window.setTimeout(() => {
+      setIsSuccessModalOpen(true)
+    }, PROGRESS_COMPLETION_DELAY_MS)
+
+    return () => window.clearTimeout(timerId)
+  }, [isCompleting])
 
   function handleDashboard() {
     resetFlow()
+    setIsCompleting(false)
     setIsSuccessModalOpen(false)
   }
 
@@ -46,8 +61,8 @@ export function OnboardingFlow() {
         {showProgress && (
           <div className="mx-auto w-4/5 animate-progress-in">
             <ProgressBar
-              currentStep={currentStepIndex}
-              totalSteps={ONBOARDING_STEPS.length - 1}
+              currentStep={isCompleting ? totalSteps : currentStepIndex}
+              totalSteps={totalSteps}
             />
           </div>
         )}
@@ -98,7 +113,7 @@ export function OnboardingFlow() {
               password={answers.password}
               onBack={() => goToStep('name')}
               onConfirmPasswordChange={setConfirmPassword}
-              onContinue={() => setIsSuccessModalOpen(true)}
+              onContinue={() => setIsCompleting(true)}
               onPasswordChange={setPassword}
             />
           )}
