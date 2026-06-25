@@ -14,6 +14,18 @@ import { PasswordStep } from './components/PasswordStep'
 import { SuccessModal } from './components/SuccessModal'
 
 const PROGRESS_COMPLETION_DELAY_MS = 550
+const SUCCESS_MODAL_FONTS = [
+  '400 1rem "Open Sans"',
+  '600 1rem "Open Sans"',
+]
+
+async function loadSuccessModalFonts() {
+  if (!document.fonts) return
+
+  await Promise.all(
+    SUCCESS_MODAL_FONTS.map((font) => document.fonts.load(font)),
+  )
+}
 
 export function OnboardingFlow() {
   const [isCompleting, setIsCompleting] = useState(false)
@@ -37,15 +49,30 @@ export function OnboardingFlow() {
   const currentStepIndex = ONBOARDING_STEPS.indexOf(currentStep)
   const showProgress = currentStep !== 'accountType'
   const totalSteps = ONBOARDING_STEPS.length - 1
+  const completedSteps = isCompleting
+    ? totalSteps
+    : Math.max(0, currentStepIndex - 1)
+
+  useEffect(() => {
+    void loadSuccessModalFonts().catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     if (!isCompleting) return
 
-    const timerId = window.setTimeout(() => {
-      setIsSuccessModalOpen(true)
+    let isCancelled = false
+    const timerId = window.setTimeout(async () => {
+      try {
+        await loadSuccessModalFonts()
+      } finally {
+        if (!isCancelled) setIsSuccessModalOpen(true)
+      }
     }, PROGRESS_COMPLETION_DELAY_MS)
 
-    return () => window.clearTimeout(timerId)
+    return () => {
+      isCancelled = true
+      window.clearTimeout(timerId)
+    }
   }, [isCompleting])
 
   function handleDashboard() {
@@ -61,7 +88,7 @@ export function OnboardingFlow() {
         {showProgress && (
           <div className="mx-auto w-4/5 animate-progress-in">
             <ProgressBar
-              currentStep={isCompleting ? totalSteps : currentStepIndex}
+              currentStep={completedSteps}
               totalSteps={totalSteps}
             />
           </div>

@@ -8,10 +8,6 @@ export type OnboardingStep =
   | 'otpVerification'
   | 'name'
   | 'password'
-  | 'pin'
-  | 'login'
-  | 'resetPassword'
-  | 'success'
 
 export interface OnboardingAnswers {
   accountType: AccountType | null
